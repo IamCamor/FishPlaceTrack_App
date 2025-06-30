@@ -1,0 +1,59 @@
+lib/
+├── main.dart +
+├── app.dart +
+├── models/
+│   ├── fishing_entry.dart +
+│   ├── user.dart +
+│   ├── achievement.dart +
+│   ├── report.dart +
+│   ├── like.dart +
+│   ├── comment.dart +
+│   └── fishing_location.dart
+├── services/
+│   ├── api_service.dart +
+│   ├── auth_service.dart +
+│   ├── achievement_service.dart +
+│   ├── notification_service.dart +
+│   ├── bookmark_service.dart +
+│   └── admin_service.dart +
+├── widgets/
+│   ├── user_avatar.dart +
+│   ├── entry_card.dart +
+│   ├── achievement_badge.dart +
+│   ├── social_actions.dart +
+│   ├── companion_selector.dart +
+│   ├── report_button.dart  +
+│   └── stat_badge.dart +
+├── screens/
+│   ├── home/
+│   │   ├── home_screen.dart +
+│   │   └── feed_screen.dart +
+│   ├── entries/
+│   │   ├── add_entry_screen.dart +
+│   │   ├── entry_detail_screen.dart +
+│   │   └── comment_section.dart +
+│   ├── top/
+│   │   ├── top_fishers_screen.dart +
+│   │   ├── top_places_screen.dart +
+│   │   └── top_fish_screen.dart +
+│   ├── profile/
+│   │   ├── profile_screen.dart +
+│   │   └── edit_profile_screen.dart +
+│   ├── admin/
+│   │   ├── admin_dashboard.dart +
+│   │   └── user_management.dart +
+│   ├── maps/
+│   │   ├── fishing_map.dart +
+│   │   └── place_detail.dart +
+│   ├── auth/
+│   │   ├── login_screen.dart +
+│   │   └── register_screen.dart +
+│   └── settings/
+│       └── settings_screen.dart +
+├── utils/
+│   ├── constants.dart +
+│   └── helpers.dart +
+└── theme/
+    ├── app_theme.dart +
+    └── app_colors.dart +
+```
