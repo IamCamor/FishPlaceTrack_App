@@ -1,7 +1,7 @@
-name: fishplacetrack_app
-description: "A new Flutter project."
+name: fishtrack
+description: "FishTrack - Дневник рыбалок, социальная сеть рыбаков"
 publish_to: 'none'
-version: 0.1.0
+version: 1.0.0+1
 
 environment:
   sdk: ^3.8.1
@@ -9,24 +9,77 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  
+  # State Management
   provider: ^6.0.5
+  
+  # Network & API
   http: ^0.13.5
+  dio: ^5.3.2
+  
+  # Media & Images
   image_picker: ^0.8.7
-  intl: ^0.18.1
+  cached_network_image: ^3.3.0
+  photo_view: ^0.14.0
+  
+  # Location & Maps
+  google_maps_flutter: ^2.2.3
+  geolocator: ^9.0.2
+  geocoding: ^2.1.0
+  
+  # Firebase & Auth
   firebase_core: ^2.15.0
   firebase_auth: ^4.9.0
+  firebase_messaging: ^14.6.7
+  firebase_storage: ^11.2.6
   google_sign_in: ^6.1.0
+  sign_in_with_apple: ^5.0.0
+  
+  # Local Storage
   shared_preferences: ^2.2.0
-  cached_network_image: ^3.3.0
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  
+  # UI & UX
+  intl: ^0.18.1
   fluttertoast: ^8.2.2
-  google_maps_flutter: ^2.2.3
   url_launcher: ^6.1.10
   share_plus: ^7.0.1
+  flutter_svg: ^2.0.7
+  animations: ^2.0.8
+  shimmer: ^3.0.0
+  
+  # Utils
+  uuid: ^4.0.0
+  timeago: ^3.5.0
+  permission_handler: ^11.0.1
+  device_info_plus: ^9.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  build_runner: ^2.4.7
 
 flutter:
   uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/lang/
+    - assets/fish/
+    - assets/knots/
+    
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700

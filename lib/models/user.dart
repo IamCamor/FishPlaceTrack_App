@@ -1,81 +1,119 @@
 class User {
   final String id;
-  final String name;
   final String email;
-  final String? avatarUrl;
-  final List<String> roles;
-  final int level;
-  final int experience;
-  final List<String> favoriteBrands;
-  final List<String> favoriteBaits;
-  final bool isGuide;
-  final bool isBanned;
+  final String? displayName;
+  final String? photoURL;
+  final String? phoneNumber;
+  final DateTime createdAt;
+  final DateTime? lastLoginAt;
+  final UserLevel level;
   final int totalCatches;
-  final int totalWeight;
-  final int achievementsCount;
-  final bool hasMonthlyGoldBadge;
-  final DateTime? goldBadgeExpiration;
+  final double totalWeight;
+  final List<String> favoriteBrands;
+  final Map<String, dynamic>? settings;
+  final bool isVerified;
+  final bool isActive;
 
   User({
     required this.id,
-    required this.name,
     required this.email,
-    this.avatarUrl,
-    this.roles = const ['user'],
-    this.level = 1,
-    this.experience = 0,
-    this.favoriteBrands = const [],
-    this.favoriteBaits = const [],
-    this.isGuide = false,
-    this.isBanned = false,
+    this.displayName,
+    this.photoURL,
+    this.phoneNumber,
+    required this.createdAt,
+    this.lastLoginAt,
+    this.level = UserLevel.novice,
     this.totalCatches = 0,
-    this.totalWeight = 0,
-    this.achievementsCount = 0,
-    this.hasMonthlyGoldBadge = false,
-    this.goldBadgeExpiration,
+    this.totalWeight = 0.0,
+    this.favoriteBrands = const [],
+    this.settings,
+    this.isVerified = false,
+    this.isActive = true,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      avatarUrl: json['avatarUrl'],
-      roles: List<String>.from(json['roles']),
-      level: json['level'],
-      experience: json['experience'],
-      favoriteBrands: List<String>.from(json['favoriteBrands']),
-      favoriteBaits: List<String>.from(json['favoriteBaits']),
-      isGuide: json['isGuide'],
-      isBanned: json['isBanned'],
-      totalCatches: json['totalCatches'],
-      totalWeight: json['totalWeight'],
-      achievementsCount: json['achievementsCount'],
-      hasMonthlyGoldBadge: json['hasMonthlyGoldBadge'],
-      goldBadgeExpiration: json['goldBadgeExpiration'] != null
-          ? DateTime.parse(json['goldBadgeExpiration'])
+      id: json['id'] ?? '',
+      email: json['email'] ?? '',
+      displayName: json['display_name'],
+      photoURL: json['photo_url'],
+      phoneNumber: json['phone_number'],
+      createdAt: DateTime.parse(json['created_at']),
+      lastLoginAt: json['last_login_at'] != null 
+          ? DateTime.parse(json['last_login_at']) 
           : null,
+      level: UserLevel.values.firstWhere(
+        (e) => e.name == json['level'],
+        orElse: () => UserLevel.novice,
+      ),
+      totalCatches: json['total_catches'] ?? 0,
+      totalWeight: (json['total_weight'] ?? 0.0).toDouble(),
+      favoriteBrands: List<String>.from(json['favorite_brands'] ?? []),
+      settings: json['settings'],
+      isVerified: json['is_verified'] ?? false,
+      isActive: json['is_active'] ?? true,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
       'email': email,
-      'avatarUrl': avatarUrl,
-      'roles': roles,
-      'level': level,
-      'experience': experience,
-      'favoriteBrands': favoriteBrands,
-      'favoriteBaits': favoriteBaits,
-      'isGuide': isGuide,
-      'isBanned': isBanned,
-      'totalCatches': totalCatches,
-      'totalWeight': totalWeight,
-      'achievementsCount': achievementsCount,
-      'hasMonthlyGoldBadge': hasMonthlyGoldBadge,
-      'goldBadgeExpiration': goldBadgeExpiration?.toIso8601String(),
+      'display_name': displayName,
+      'photo_url': photoURL,
+      'phone_number': phoneNumber,
+      'created_at': createdAt.toIso8601String(),
+      'last_login_at': lastLoginAt?.toIso8601String(),
+      'level': level.name,
+      'total_catches': totalCatches,
+      'total_weight': totalWeight,
+      'favorite_brands': favoriteBrands,
+      'settings': settings,
+      'is_verified': isVerified,
+      'is_active': isActive,
     };
   }
+
+  User copyWith({
+    String? displayName,
+    String? photoURL,
+    String? phoneNumber,
+    DateTime? lastLoginAt,
+    UserLevel? level,
+    int? totalCatches,
+    double? totalWeight,
+    List<String>? favoriteBrands,
+    Map<String, dynamic>? settings,
+    bool? isVerified,
+    bool? isActive,
+  }) {
+    return User(
+      id: id,
+      email: email,
+      displayName: displayName ?? this.displayName,
+      photoURL: photoURL ?? this.photoURL,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      createdAt: createdAt,
+      lastLoginAt: lastLoginAt ?? this.lastLoginAt,
+      level: level ?? this.level,
+      totalCatches: totalCatches ?? this.totalCatches,
+      totalWeight: totalWeight ?? this.totalWeight,
+      favoriteBrands: favoriteBrands ?? this.favoriteBrands,
+      settings: settings ?? this.settings,
+      isVerified: isVerified ?? this.isVerified,
+      isActive: isActive ?? this.isActive,
+    );
+  }
+}
+
+enum UserLevel {
+  novice('Новичок', 'novice'),
+  guide('Гид', 'guide'),
+  pro('Профи', 'pro'),
+  top('Топ', 'top');
+
+  const UserLevel(this.displayName, this.name);
+
+  final String displayName;
+  final String name;
 }

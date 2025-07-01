@@ -15,18 +15,28 @@ import '../../screens/profile_screen.dart';
 import '../../widgets/entry_card.dart';
 import '../../widgets/achievement_badge.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_theme.dart';
+import '../../models/fishing_log.dart';
+import '../../widgets/fishing_log_card.dart';
+import '../../widgets/shimmer_loading.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
   int _selectedIndex = 0;
   late Future<List<FishingEntry>> _entriesFuture;
   final PageController _pageController = PageController();
+  final ScrollController _scrollController = ScrollController();
+  final List<FishingLog> _fishingLogs = [];
+  bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMoreData = true;
+  int _currentPage = 1;
 
   final List<Widget> _screens = [
     FeedScreen(),
@@ -39,7 +49,18 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadEntries();
+    _loadFishingLogs();
+    _scrollController.addListener(_onScroll);
   }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 
   void _loadEntries() {
     setState(() {
@@ -47,29 +68,99 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      _loadMoreFishingLogs();
+    }
+  }
+
+  Future<void> _loadFishingLogs() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final logs = await ApiService().getFishingLogs(page: 1, limit: 20);
+      
+      setState(() {
+        _fishingLogs.clear();
+        _fishingLogs.addAll(logs);
+        _currentPage = 1;
+        _hasMoreData = logs.length == 20;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      _showError('Ошибка загрузки данных');
+    }
+  }
+
+  Future<void> _loadMoreFishingLogs() async {
+    if (_isLoadingMore || !_hasMoreData) return;
+
+    try {
+      setState(() {
+        _isLoadingMore = true;
+      });
+
+      final logs = await ApiService().getFishingLogs(
+        page: _currentPage + 1, 
+        limit: 20,
+      );
+      
+      setState(() {
+        _fishingLogs.addAll(logs);
+        _currentPage++;
+        _hasMoreData = logs.length == 20;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingMore = false;
+      });
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+    
     final currentUser = Provider.of<AuthService>(context).currentUser;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Рыболовный дневник'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.waves,
+              color: AppTheme.primary,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            const Text('FishTrack'),
+          ],
+        ),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: _loadEntries,
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () {
+              // TODO: Navigate to notifications
+            },
           ),
           IconButton(
-            icon: Icon(Icons.map),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => MapScreen(
-                  initialLocation: LatLng(55.7558, 37.6173),
-                  title: "Карта рыбных мест",
-                ),
-              ),
-            ),
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              // TODO: Navigate to search
+            },
           ),
           if (currentUser != null)
             IconButton(
@@ -362,6 +453,62 @@ class RankingsScreen extends StatelessWidget {
             child: AchievementBadge(achievement: achievements[index]),
           );
         },
+      ),
+    );
+  }
+}
+
+class FishingLogCardShimmer extends StatelessWidget {
+  const FishingLogCardShimmer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 120,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
+              ),
+              child: ShimmerLoading(
+                height: double.infinity,
+                width: double.infinity,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ShimmerLoading(
+                  height: 16,
+                  width: 100,
+                ),
+                SizedBox(height: 8),
+                ShimmerLoading(
+                  height: 12,
+                  width: 80,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
