@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:yandex_mapkit/yandex_mapkit.dart';
 import '../../models/fishing_entry.dart';
 import '../../services/api_service.dart';
 import '../../services/user_provider.dart';
 import '../../widgets/companion_selector.dart';
 
 class AddEntryScreen extends StatefulWidget {
-  final LatLng? initialLocation;
+  final Point? initialLocation;
   
   const AddEntryScreen({super.key, this.initialLocation});
 

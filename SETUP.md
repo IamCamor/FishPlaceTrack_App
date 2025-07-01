@@ -20,7 +20,7 @@
 - `AppTheme` - современная дизайн-система с цветовой палитрой FishTrack
 - `MainScreen` - главный экран с bottom navigation
 - `HomeScreen` - лента рыбалок с пагинацией
-- `MapScreen` - интерактивная карта с Google Maps
+- `MapScreen` - интерактивная карта с Яндекс.Картами
 - `LoginScreen` - красивый экран авторизации
 - `FishingLogCard` - карточка рыбалки с фото и статистикой
 - `LocationBottomSheet` - детальная информация о месте
@@ -71,41 +71,22 @@ firebase login
 flutterfire configure --project=fishtrack-app
 ```
 
-### 4. Google Maps API
+### 4. Яндекс.Карты API
 
 #### Получение ключа
-1. Перейдите в [Google Cloud Console](https://console.cloud.google.com/)
-2. Создайте проект или выберите существующий
-3. Включите Maps SDK for Android/iOS
-4. Создайте API ключ
+1. Перейдите на [Яндекс.Консоль разработчика](https://developer.tech.yandex.ru/)
+2. Создайте аккаунт или войдите в существующий
+3. Создайте новое приложение типа "Мобильное приложение"
+4. Включите MapKit Mobile SDK
+5. Скопируйте API ключ
 
-#### Настройка для Android
-```xml
-<!-- android/app/src/main/AndroidManifest.xml -->
-<application>
-    <meta-data
-        android:name="com.google.android.geo.API_KEY"
-        android:value="YOUR_GOOGLE_MAPS_API_KEY" />
-</application>
+#### Настройка в приложении
+Откройте файл `lib/config/yandex_config.dart` и замените:
+```dart
+static const String yandexMapKitApiKey = 'YOUR_YANDEX_MAPKIT_API_KEY';
 ```
 
-#### Настройка для iOS
-```swift
-// ios/Runner/AppDelegate.swift
-import GoogleMaps
-
-@UIApplicationMain
-@objc class AppDelegate: FlutterAppDelegate {
-  override func application(
-    _ application: UIApplication,
-    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-  ) -> Bool {
-    GMSServices.provideAPIKey("YOUR_GOOGLE_MAPS_API_KEY")
-    GeneratedPluginRegistrant.register(with: self)
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
-  }
-}
-```
+Подробная инструкция находится в файле `YANDEX_MAPS_SETUP.md`
 
 ### 5. Запуск приложения
 ```bash
@@ -158,12 +139,12 @@ cd android && ./gradlew signingReport
 # Проверьте Bundle ID для iOS в Xcode
 ```
 
-#### Ошибки Google Maps
+#### Ошибки Яндекс.Карт
 ```bash
-# Проверьте что API ключ имеет права на:
-# - Maps SDK for Android
-# - Maps SDK for iOS  
-# - Maps JavaScript API (для web)
+# Проверьте что:
+# - API ключ правильно указан в yandex_config.dart
+# - API ключ активен в консоли Яндекс  
+# - Приложение имеет права на геолокацию
 ```
 
 #### Ошибки зависимостей

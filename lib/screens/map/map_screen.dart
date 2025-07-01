@@ -1,10 +1,12 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:yandex_mapkit/yandex_mapkit.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../theme/app_theme.dart';
 import '../../models/location.dart';
 import '../../services/api_service.dart';
 import '../../widgets/location_bottom_sheet.dart';
+import '../../utils/marker_icons.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -14,16 +16,16 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> with AutomaticKeepAliveClientMixin {
-  GoogleMapController? _mapController;
+  YandexMapController? _mapController;
   Position? _currentPosition;
-  final Set<Marker> _markers = {};
+  final List<PlacemarkMapObject> _placemarks = [];
   final List<Location> _locations = [];
   LocationType? _selectedLocationType;
   bool _isLoading = true;
 
-  static const CameraPosition _defaultPosition = CameraPosition(
-    target: LatLng(55.7558, 37.6176), // Moscow
-    zoom: 10,
+  static const Point _defaultPosition = Point(
+    latitude: 55.7558, 
+    longitude: 37.6176, // Moscow
   );
 
   @override
@@ -67,9 +69,15 @@ class _MapScreenState extends State<MapScreen> with AutomaticKeepAliveClientMixi
       });
 
       if (_mapController != null) {
-        await _mapController!.animateCamera(
-          CameraUpdate.newLatLng(
-            LatLng(position.latitude, position.longitude),
+        await _mapController!.moveCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: Point(
+                latitude: position.latitude, 
+                longitude: position.longitude,
+              ),
+              zoom: 14,
+            ),
           ),
         );
       }
@@ -84,7 +92,7 @@ class _MapScreenState extends State<MapScreen> with AutomaticKeepAliveClientMixi
   Future<void> _loadLocations() async {
     try {
       final locations = await ApiService().getLocations(limit: 100);
-      _updateMapMarkers(locations);
+      _updateMapPlacemarks(locations);
       setState(() {
         _locations.clear();
         _locations.addAll(locations);
@@ -106,7 +114,7 @@ class _MapScreenState extends State<MapScreen> with AutomaticKeepAliveClientMixi
         radius: 50.0, // 50km radius
         type: _selectedLocationType,
       );
-      _updateMapMarkers(locations);
+      _updateMapPlacemarks(locations);
       setState(() {
         _locations.clear();
         _locations.addAll(locations);
@@ -116,61 +124,68 @@ class _MapScreenState extends State<MapScreen> with AutomaticKeepAliveClientMixi
     }
   }
 
-  void _updateMapMarkers(List<Location> locations) {
-    final markers = <Marker>{};
+  Future<void> _updateMapPlacemarks(List<Location> locations) async {
+    final placemarks = <PlacemarkMapObject>[];
 
-    // Add current location marker
+    // Add current location placemark
     if (_currentPosition != null) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('current_location'),
-          position: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          infoWindow: const InfoWindow(title: 'Моё местоположение'),
+      final currentLocationIcon = await MarkerIcons.getCurrentLocationIcon();
+      placemarks.add(
+        PlacemarkMapObject(
+          mapId: const MapObjectId('current_location'),
+          point: Point(
+            latitude: _currentPosition!.latitude, 
+            longitude: _currentPosition!.longitude,
+          ),
+          icon: PlacemarkIcon.single(PlacemarkIconStyle(
+            image: BitmapDescriptor.fromBytes(currentLocationIcon),
+            scale: 1.0,
+          )),
+          onTap: (placemark, point) {
+            _showInfoDialog('Моё местоположение');
+          },
         ),
       );
     }
 
-    // Add location markers
+    // Add location placemarks
     for (final location in locations) {
-      markers.add(
-        Marker(
-          markerId: MarkerId(location.id),
-          position: LatLng(location.latitude, location.longitude),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            _getMarkerColor(location.type),
-          ),
-          infoWindow: InfoWindow(
-            title: location.name,
-            snippet: location.type.displayName,
-          ),
-          onTap: () => _showLocationDetails(location),
+      final locationIcon = await _getMarkerIcon(location.type);
+      placemarks.add(
+        PlacemarkMapObject(
+          mapId: MapObjectId(location.id),
+          point: Point(latitude: location.latitude, longitude: location.longitude),
+          icon: PlacemarkIcon.single(PlacemarkIconStyle(
+            image: BitmapDescriptor.fromBytes(locationIcon),
+            scale: 1.0,
+          )),
+          onTap: (placemark, point) => _showLocationDetails(location),
         ),
       );
     }
 
     setState(() {
-      _markers.clear();
-      _markers.addAll(markers);
+      _placemarks.clear();
+      _placemarks.addAll(placemarks);
     });
   }
 
-  double _getMarkerColor(LocationType type) {
+  Future<Uint8List> _getMarkerIcon(LocationType type) async {
     switch (type) {
       case LocationType.fishingSpot:
-        return BitmapDescriptor.hueGreen;
+        return await MarkerIcons.getFishingSpotIcon();
       case LocationType.shop:
-        return BitmapDescriptor.hueOrange;
+        return await MarkerIcons.getShopIcon();
       case LocationType.base:
-        return BitmapDescriptor.hueBlue;
+        return await MarkerIcons.getBaseIcon();
       case LocationType.slip:
-        return BitmapDescriptor.hueViolet;
+        return await MarkerIcons.getSlipIcon();
       case LocationType.farm:
-        return BitmapDescriptor.hueRose;
+        return await MarkerIcons.getFarmIcon();
       case LocationType.pier:
-        return BitmapDescriptor.hueYellow;
+        return await MarkerIcons.getPierIcon();
       default:
-        return BitmapDescriptor.hueRed;
+        return await MarkerIcons.getFishingSpotIcon();
     }
   }
 
@@ -180,6 +195,21 @@ class _MapScreenState extends State<MapScreen> with AutomaticKeepAliveClientMixi
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => LocationBottomSheet(location: location),
+    );
+  }
+
+  void _showInfoDialog(String title) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ОК'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -297,24 +327,28 @@ class _MapScreenState extends State<MapScreen> with AutomaticKeepAliveClientMixi
       ),
       body: Stack(
         children: [
-          GoogleMap(
-            initialCameraPosition: _defaultPosition,
-            markers: _markers,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            mapType: MapType.normal,
-            zoomControlsEnabled: false,
+          YandexMap(
             onMapCreated: (controller) {
               _mapController = controller;
-              if (_currentPosition != null) {
-                controller.animateCamera(
-                  CameraUpdate.newLatLng(
-                    LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+              controller.moveCamera(
+                CameraUpdate.newCameraPosition(
+                  CameraPosition(
+                    target: _currentPosition != null
+                        ? Point(
+                            latitude: _currentPosition!.latitude,
+                            longitude: _currentPosition!.longitude,
+                          )
+                        : _defaultPosition,
+                    zoom: 10,
                   ),
-                );
-              }
+                ),
+              );
             },
-            onCameraMove: (position) {
+            mapObjects: _placemarks,
+            onMapTap: (point) {
+              // Можно добавить обработку тапа по карте
+            },
+            onCameraPositionChanged: (cameraPosition, reason, finished) {
               // Optional: Load locations when map moves
             },
           ),

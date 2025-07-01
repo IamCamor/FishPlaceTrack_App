@@ -1,14 +1,16 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:yandex_mapkit/yandex_mapkit.dart';
 import 'package:provider/provider.dart';
 import '../../services/entry_provider.dart';
 import '../../services/spot_provider.dart';
 import '../../models/fishing_entry.dart';
 import '../../models/fishing_spot.dart';
+import '../../utils/marker_icons.dart';
 import './place_detail.dart';
 
 class FishingMapScreen extends StatefulWidget {
-  final LatLng? initialLocation;
+  final Point? initialLocation;
   final String title;
   
   const FishingMapScreen({
@@ -22,25 +24,48 @@ class FishingMapScreen extends StatefulWidget {
 }
 
 class _FishingMapScreenState extends State<FishingMapScreen> {
-  late GoogleMapController _mapController;
-  final Set<Marker> _markers = {};
-  final Map<MarkerId, dynamic> _markerData = {};
+  late YandexMapController _mapController;
+  final List<PlacemarkMapObject> _placemarks = [];
+  final Map<String, dynamic> _placemarkData = {};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updatePlacemarks();
+    });
+  }
+
+  Future<void> _updatePlacemarks() async {
+    final entries = Provider.of<EntryProvider>(context, listen: false).entries;
+    final spots = Provider.of<SpotProvider>(context, listen: false).spots;
+    
+    final newPlacemarks = await _buildPlacemarks(entries, spots);
+    setState(() {
+      _placemarks.clear();
+      _placemarks.addAll(newPlacemarks);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final entries = Provider.of<EntryProvider>(context).entries;
-    final spots = Provider.of<SpotProvider>(context).spots;
     
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
-      body: GoogleMap(
-        initialCameraPosition: CameraPosition(
-          target: widget.initialLocation ?? const LatLng(55.7558, 37.6173),
-          zoom: 10,
-        ),
-        markers: _buildMarkers(entries, spots),
-        onMapCreated: (controller) => _mapController = controller,
-        onTap: (latLng) => _handleMapTap(latLng),
+      body: YandexMap(
+        onMapCreated: (controller) {
+          _mapController = controller;
+          controller.moveCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: widget.initialLocation ?? const Point(latitude: 55.7558, longitude: 37.6173),
+                zoom: 10,
+              ),
+            ),
+          );
+        },
+        mapObjects: _placemarks,
+        onMapTap: (point) => _handleMapTap(point),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _goToCurrentLocation,
@@ -49,58 +74,54 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
     );
   }
 
-  Set<Marker> _buildMarkers(List<FishingEntry> entries, List<FishingSpot> spots) {
-    _markers.clear();
-    _markerData.clear();
+  Future<List<PlacemarkMapObject>> _buildPlacemarks(List<FishingEntry> entries, List<FishingSpot> spots) async {
+    _placemarks.clear();
+    _placemarkData.clear();
     
     // Маркеры для записей о рыбалке
     for (final entry in entries) {
-      final markerId = MarkerId('entry_${entry.id}');
-      final position = LatLng(entry.latitude, entry.longitude);
+      final placemarkId = 'entry_${entry.id}';
+      final position = Point(latitude: entry.latitude, longitude: entry.longitude);
+      final entryIcon = await MarkerIcons.getFishIcon(entry.fishType);
       
-      _markers.add(
-        Marker(
-          markerId: markerId,
-          position: position,
-          infoWindow: InfoWindow(title: entry.location),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            _getEntryMarkerHue(entry.fishType),
-          ),
-          onTap: () => _showEntryDetails(entry),
+      _placemarks.add(
+        PlacemarkMapObject(
+          mapId: MapObjectId(placemarkId),
+          point: position,
+          icon: PlacemarkIcon.single(PlacemarkIconStyle(
+            image: BitmapDescriptor.fromBytes(entryIcon),
+            scale: 1.0,
+          )),
+          onTap: (placemark, point) => _showEntryDetails(entry),
         ),
       );
-      _markerData[markerId] = entry;
+      _placemarkData[placemarkId] = entry;
     }
     
     // Маркеры для рыболовных мест
     for (final spot in spots) {
-      final markerId = MarkerId('spot_${spot.id}');
-      final position = LatLng(spot.latitude, spot.longitude);
+      final placemarkId = 'spot_${spot.id}';
+      final position = Point(latitude: spot.latitude, longitude: spot.longitude);
+      final spotIcon = await MarkerIcons.getFishingSpotIcon();
       
-      _markers.add(
-        Marker(
-          markerId: markerId,
-          position: position,
-          infoWindow: InfoWindow(title: spot.name),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          onTap: () => _showSpotDetails(spot),
+      _placemarks.add(
+        PlacemarkMapObject(
+          mapId: MapObjectId(placemarkId),
+          point: position,
+          icon: PlacemarkIcon.single(PlacemarkIconStyle(
+            image: BitmapDescriptor.fromBytes(spotIcon),
+            scale: 1.1,
+          )),
+          onTap: (placemark, point) => _showSpotDetails(spot),
         ),
       );
-      _markerData[markerId] = spot;
+      _placemarkData[placemarkId] = spot;
     }
     
-    return _markers;
+    return _placemarks;
   }
 
-  double _getEntryMarkerHue(String fishType) {
-    switch (fishType.toLowerCase()) {
-      case 'щука': return BitmapDescriptor.hueGreen;
-      case 'судак': return BitmapDescriptor.hueBlue;
-      case 'окунь': return BitmapDescriptor.hueOrange;
-      case 'карп': return BitmapDescriptor.hueYellow;
-      default: return BitmapDescriptor.hueRed;
-    }
-  }
+
 
   void _showEntryDetails(FishingEntry entry) {
     showModalBottomSheet(
@@ -173,7 +194,7 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
     );
   }
 
-  void _handleMapTap(LatLng position) {
+  void _handleMapTap(Point position) {
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -215,22 +236,22 @@ class _FishingMapScreenState extends State<FishingMapScreen> {
     );
   }
 
-  void _addNewEntry(LatLng position) {
+  void _addNewEntry(Point position) {
     Navigator.pop(context);
     // Открываем экран добавления улова с предустановленными координатами
   }
 
-  void _addNewSpot(LatLng position) {
+  void _addNewSpot(Point position) {
     Navigator.pop(context);
     // Открываем экран добавления места с предустановленными координатами
   }
 
   void _goToCurrentLocation() {
     // В реальном приложении используем геолокацию
-    _mapController.animateCamera(
+    _mapController.moveCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
-          target: const LatLng(55.7558, 37.6173),
+          target: const Point(latitude: 55.7558, longitude: 37.6173),
           zoom: 14,
         ),
       ),
