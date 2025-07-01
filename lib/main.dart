@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:yandex_mapkit/yandex_mapkit.dart';
 import 'firebase_options.dart';
+import 'config/yandex_config.dart';
 import 'theme/app_theme.dart';
 import 'services/api_service.dart';
 import 'services/auth_service.dart';
@@ -15,6 +17,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Initialize Yandex MapKit
+  AndroidYandexMap.useAndroidViewSurface = false;
+  await YandexMapKit.initialize(apiKey: YandexConfig.yandexMapKitApiKey);
 
   // Initialize services
   ApiService().initialize();

@@ -25,7 +25,7 @@
 - **Material Design 3** — современный дизайн
 - **Provider** — управление состоянием
 - **Firebase Auth** — аутентификация
-- **Google Maps** — интерактивные карты
+- **Яндекс.Карты** — интерактивные карты
 - **Dio** — HTTP клиент
 
 ### Backend
@@ -37,7 +37,7 @@
 ### Сервисы
 - **Google Sign-In** — вход через Google
 - **Apple Sign-In** — вход через Apple (iOS)
-- **Google Maps API** — карты и геолокация
+- **Яндекс.MapKit API** — карты и геолокация
 - **Weather API** — погодные данные
 
 ## 🚀 Быстрый старт
@@ -71,9 +71,13 @@ flutterfire configure
 ```
 
 4. **Настройка API ключей**
+Откройте файл `lib/config/yandex_config.dart` и укажите ваш API ключ Яндекс.Карт:
+```dart
+static const String yandexMapKitApiKey = 'ваш_api_ключ_яндекс_карт';
+```
+
 Создайте файл `.env` в корне проекта:
 ```env
-GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 API_BASE_URL=https://api.fishtrack.app
 ```
 
@@ -206,16 +210,10 @@ GET    /api/rankings
 }
 ```
 
-### Google Maps
-```dart
-// android/app/src/main/AndroidManifest.xml
-<meta-data
-    android:name="com.google.android.geo.API_KEY"
-    android:value="YOUR_API_KEY" />
+### Яндекс.Карты
+Получите API ключ на [developer.tech.yandex.ru](https://developer.tech.yandex.ru/) и укажите его в `lib/config/yandex_config.dart`.
 
-// ios/Runner/AppDelegate.swift
-GMSServices.provideAPIKey("YOUR_API_KEY")
-```
+Подробная инструкция по настройке находится в файле `YANDEX_MAPS_SETUP.md`.
 
 ## 📱 Сборка
 
